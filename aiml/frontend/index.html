@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Views Predictor - Linear Regression Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Main JavaScript -->
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar or Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fa-brands fa-youtube"></i></div>
+                <div class="logo-text">
+                    <h1>YouTube Predictor</h1>
+                    <p>Linear Regression Forecasting Model</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="resetBtn" class="btn btn-secondary">
+                    <i class="fa-solid fa-rotate-left"></i> Reset Dataset
+                </button>
+            </div>
+        </header>
+
+        <!-- Metric Grid -->
+        <section class="metrics-grid">
+            <div class="metric-card" id="r2Card">
+                <div class="metric-icon"><i class="fa-solid fa-chart-line"></i></div>
+                <div class="metric-info">
+                    <span class="metric-label">Model Accuracy (R² Score)</span>
+                    <h3 class="metric-value" id="r2Value">0.00%</h3>
+                </div>
+            </div>
+            
+            <div class="metric-card" id="equationCard">
+                <div class="metric-icon"><i class="fa-solid fa-calculator"></i></div>
+                <div class="metric-info">
+                    <span class="metric-label">Model Equation</span>
+                    <h3 class="metric-value" id="equationValue">y = mx + c</h3>
+                </div>
+            </div>
+
+            <div class="metric-card" id="mseCard">
+                <div class="metric-icon"><i class="fa-solid fa-square-root-variable"></i></div>
+                <div class="metric-info">
+                    <span class="metric-label">Mean Squared Error (MSE)</span>
+                    <h3 class="metric-value" id="mseValue">0.00</h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- Left Side: Interactive Controls -->
+            <div class="controls-panel">
+                <!-- Card 1: Predict views -->
+                <div class="panel-card predict-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-wand-magic-sparkles"></i> Run Prediction</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="predictDay">Target Day (X)</label>
+                            <div class="range-container">
+                                <input type="range" id="predictDaySlider" min="1" max="50" value="20" class="slider">
+                                <input type="number" id="predictDayInput" min="1" max="1000" value="20" class="num-input">
+                            </div>
+                        </div>
+                        <div class="prediction-result">
+                            <span class="prediction-label">Predicted Views</span>
+                            <div class="prediction-value" id="predictedViews">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Add Data -->
+                <div class="panel-card add-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-plus"></i> Add Training Data</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="addDataForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="newDay">Day</label>
+                                    <input type="number" id="newDay" min="1" placeholder="e.g. 16" required class="input-field">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newViews">Views</label>
+                                    <input type="number" id="newViews" min="0" placeholder="e.g. 1300" required class="input-field">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">
+                                <i class="fa-solid fa-bolt"></i> Update & Retrain
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Card 3: Feed Dataset -->
+                <div class="panel-card feed-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-file-csv"></i> Feed Dataset (CSV)</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="feed-tabs">
+                            <button type="button" class="tab-btn active" id="tabPasteBtn"><i class="fa-solid fa-paste"></i> Paste CSV</button>
+                            <button type="button" class="tab-btn" id="tabUploadBtn"><i class="fa-solid fa-file-arrow-up"></i> Upload File</button>
+                        </div>
+                        
+                        <form id="feedDatasetForm">
+                            <!-- Paste CSV Section -->
+                            <div class="feed-section" id="sectionPaste">
+                                <div class="form-group">
+                                    <label for="csvTextInput">Paste CSV Content (Day,Views)</label>
+                                    <textarea id="csvTextInput" class="textarea-field" rows="6" placeholder="Day,Views&#10;1,120&#10;2,185&#10;3,260"></textarea>
+                                </div>
+                            </div>
+                            
+                            <!-- Upload CSV Section -->
+                            <div class="feed-section hidden" id="sectionUpload">
+                                <div class="form-group">
+                                    <label>Choose CSV File</label>
+                                    <div class="file-upload-wrapper" id="dropZone">
+                                        <input type="file" id="csvFileInput" accept=".csv" class="file-input">
+                                        <div class="file-upload-label">
+                                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                                            <span>Drag & drop or click to upload CSV</span>
+                                        </div>
+                                    </div>
+                                    <div id="fileNameDisplay" class="file-name-display hidden">
+                                        <div class="file-info-group">
+                                            <i class="fa-solid fa-file-csv"></i>
+                                            <span id="fileNameText">filename.csv</span>
+                                        </div>
+                                        <button type="button" id="clearFileBtn" class="clear-file-btn">&times;</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-block">
+                                <i class="fa-solid fa-database"></i> Feed Dataset & Retrain
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Visualization and Raw Data Table -->
+            <div class="visualization-panel">
+                <div class="panel-card chart-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-chart-area"></i> Regression Visualization</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="regressionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-card table-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-database"></i> Training Dataset</h2>
+                        <span class="table-count" id="tableCount">0 rows</span>
+                    </div>
+                    <div class="card-body scrollable">
+                        <table class="data-table" id="datasetTable">
+                            <thead>
+                                <tr>
+                                    <th>Day</th>
+                                    <th>Actual Views</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Rows will be rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="app-footer">
+            <p>Developed with <i class="fa-solid fa-heart text-danger"></i> using FastAPI & scikit-learn</p>
+        </footer>
+    </div>
+</body>
+</html>
